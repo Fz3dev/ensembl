@@ -1,6 +1,4 @@
-# Ensemble Calendar
-
-![Ensemble Calendar Logo](/public/placeholder-logo.svg)
+# Ensemble 
 
 ## 📅 Présentation
 
