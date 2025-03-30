@@ -1,13 +1,14 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CheckCircle } from "lucide-react"
 import confetti from 'canvas-confetti'
 
-export default function OnboardingCompletePage() {
+// Composant qui utilise useSearchParams
+function CompleteContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const familyId = searchParams.get("family_id")
@@ -47,11 +48,7 @@ export default function OnboardingCompletePage() {
     
     frame()
   }, [familyId, router])
-
-  const handleGoToDashboard = () => {
-    router.push("/dashboard")
-  }
-
+  
   return (
     <Card className="w-full">
       <CardHeader>
@@ -75,11 +72,35 @@ export default function OnboardingCompletePage() {
         <Button 
           className="w-full" 
           size="lg"
-          onClick={handleGoToDashboard}
+          onClick={() => router.push("/dashboard")}
         >
           Accéder à mon calendrier
         </Button>
       </CardFooter>
     </Card>
+  )
+}
+
+// Fallback pendant le chargement
+function CompleteFallback() {
+  return (
+    <Card className="w-full">
+      <CardHeader className="text-center">
+        <CardTitle className="text-2xl">Chargement...</CardTitle>
+      </CardHeader>
+      <CardContent className="text-center">
+        <p>Préparation de votre calendrier familial</p>
+      </CardContent>
+    </Card>
+  )
+}
+
+export default function OnboardingCompletePage() {
+  return (
+    <div className="container flex flex-col items-center justify-center min-h-screen py-12">
+      <Suspense fallback={<CompleteFallback />}>
+        <CompleteContent />
+      </Suspense>
+    </div>
   )
 }

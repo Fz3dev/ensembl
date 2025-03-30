@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -28,7 +28,8 @@ interface ChildFormData {
   color: string
 }
 
-export default function AddChildrenPage() {
+// Composant qui utilise useSearchParams
+function AddChildrenContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const familyId = searchParams.get("family_id")
@@ -241,5 +242,34 @@ export default function AddChildrenPage() {
         </Button>
       </CardFooter>
     </Card>
+  )
+}
+
+// Fallback pendant le chargement
+function AddChildrenFallback() {
+  return (
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle className="text-center">Chargement...</CardTitle>
+        <CardDescription className="text-center">
+          Préparation de l'ajout d'enfants
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+export default function AddChildrenPage() {
+  return (
+    <div className="container flex items-center justify-center min-h-screen py-12">
+      <Suspense fallback={<AddChildrenFallback />}>
+        <AddChildrenContent />
+      </Suspense>
+    </div>
   )
 }

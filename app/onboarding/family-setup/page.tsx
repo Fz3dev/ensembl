@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -11,7 +11,8 @@ import confetti from 'canvas-confetti'
 import ChildForm, { ChildFormData } from "@/components/onboarding/child-form"
 import InviteForm from "@/components/onboarding/invite-form"
 
-export default function FamilySetupPage() {
+// Composant qui utilise useSearchParams
+function FamilySetupContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const familyId = searchParams.get("family_id")
@@ -235,5 +236,34 @@ export default function FamilySetupPage() {
         )}
       </CardContent>
     </Card>
+  )
+}
+
+// Fallback pendant le chargement
+function FamilySetupFallback() {
+  return (
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle className="text-center">Chargement...</CardTitle>
+        <CardDescription className="text-center">
+          Préparation de la configuration familiale
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+export default function FamilySetupPage() {
+  return (
+    <div className="container flex items-center justify-center min-h-screen py-12">
+      <Suspense fallback={<FamilySetupFallback />}>
+        <FamilySetupContent />
+      </Suspense>
+    </div>
   )
 }

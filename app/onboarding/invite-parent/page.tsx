@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -11,7 +11,8 @@ import { supabase } from "@/utils/supabase/client"
 import { getCurrentUser } from "@/utils/supabase/client"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-export default function InviteParentPage() {
+// Composant qui utilise useSearchParams
+function InviteParentContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const familyId = searchParams.get("family_id")
@@ -128,6 +129,14 @@ export default function InviteParentPage() {
     router.push(`/onboarding/complete?family_id=${familyId}`)
   }
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -140,90 +149,81 @@ export default function InviteParentPage() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center p-6">
-            <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-            <p className="text-center text-muted-foreground">
-              Génération du lien d'invitation...
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="invite-link">Lien d'invitation</Label>
+            <div className="flex">
+              <Input
+                id="invite-link"
+                value={inviteUrl}
+                readOnly
+                className="flex-1 rounded-r-none"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                className="rounded-l-none"
+                onClick={() => copyToClipboard(inviteUrl)}
+              >
+                {copied ? (
+                  <Check className="h-4 w-4" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Ce lien expire dans 30 jours
             </p>
           </div>
-        ) : (
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="invite-link">Lien d'invitation</Label>
-              <div className="flex">
-                <Input
-                  id="invite-link"
-                  value={inviteUrl}
-                  readOnly
-                  className="flex-1 rounded-r-none"
-                />
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="rounded-l-none"
-                  onClick={() => copyToClipboard(inviteUrl)}
+          
+          <div className="space-y-2">
+            <Label>Partager via</Label>
+            <Tabs defaultValue="whatsapp" className="w-full">
+              <TabsList className="grid grid-cols-3 w-full">
+                <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
+                <TabsTrigger value="sms">SMS</TabsTrigger>
+                <TabsTrigger value="email">Email</TabsTrigger>
+              </TabsList>
+              <TabsContent value="whatsapp" className="pt-4">
+                <Button 
+                  variant="outline" 
+                  className="w-full" 
+                  onClick={shareViaWhatsApp}
                 >
-                  {copied ? (
-                    <Check className="h-4 w-4" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
+                  <Share2 className="mr-2 h-4 w-4" />
+                  Partager via WhatsApp
                 </Button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Ce lien expire dans 30 jours
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Partager via</Label>
-              <Tabs defaultValue="whatsapp" className="w-full">
-                <TabsList className="grid grid-cols-3 w-full">
-                  <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
-                  <TabsTrigger value="sms">SMS</TabsTrigger>
-                  <TabsTrigger value="email">Email</TabsTrigger>
-                </TabsList>
-                <TabsContent value="whatsapp" className="pt-4">
-                  <Button 
-                    variant="outline" 
-                    className="w-full" 
-                    onClick={shareViaWhatsApp}
-                  >
-                    <Share2 className="mr-2 h-4 w-4" />
-                    Partager via WhatsApp
-                  </Button>
-                </TabsContent>
-                <TabsContent value="sms" className="pt-4">
-                  <Button 
-                    variant="outline" 
-                    className="w-full" 
-                    onClick={shareViaSMS}
-                  >
-                    <Share2 className="mr-2 h-4 w-4" />
-                    Partager par SMS
-                  </Button>
-                </TabsContent>
-                <TabsContent value="email" className="pt-4">
-                  <Button 
-                    variant="outline" 
-                    className="w-full" 
-                    onClick={shareViaEmail}
-                  >
-                    <Share2 className="mr-2 h-4 w-4" />
-                    Partager par Email
-                  </Button>
-                </TabsContent>
-              </Tabs>
-            </div>
-            
-            {error && (
-              <div className="text-sm text-red-500 text-center">
-                {error}
-              </div>
-            )}
+              </TabsContent>
+              <TabsContent value="sms" className="pt-4">
+                <Button 
+                  variant="outline" 
+                  className="w-full" 
+                  onClick={shareViaSMS}
+                >
+                  <Share2 className="mr-2 h-4 w-4" />
+                  Partager par SMS
+                </Button>
+              </TabsContent>
+              <TabsContent value="email" className="pt-4">
+                <Button 
+                  variant="outline" 
+                  className="w-full" 
+                  onClick={shareViaEmail}
+                >
+                  <Share2 className="mr-2 h-4 w-4" />
+                  Partager par Email
+                </Button>
+              </TabsContent>
+            </Tabs>
           </div>
-        )}
+          
+          {error && (
+            <div className="text-sm text-red-500 text-center">
+              {error}
+            </div>
+          )}
+        </div>
       </CardContent>
       <CardFooter className="flex flex-col gap-2">
         <Button 
@@ -243,5 +243,34 @@ export default function InviteParentPage() {
         </Button>
       </CardFooter>
     </Card>
+  )
+}
+
+// Fallback pendant le chargement
+function InviteParentFallback() {
+  return (
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle className="text-center">Chargement...</CardTitle>
+        <CardDescription className="text-center">
+          Préparation de l'invitation
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+export default function InviteParentPage() {
+  return (
+    <div className="container flex items-center justify-center min-h-screen py-12">
+      <Suspense fallback={<InviteParentFallback />}>
+        <InviteParentContent />
+      </Suspense>
+    </div>
   )
 }
