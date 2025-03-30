@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { signIn } from "@/utils/supabase/auth"
+import { supabase } from "@/utils/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -34,33 +34,76 @@ export default function LoginForm() {
     setError(null)
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    setIsLoading(true)
     setError(null)
 
-    if (!formData.email || !formData.password) {
-      setError("Email et mot de passe requis")
-      return
-    }
-
-    setIsLoading(true)
-
     try {
-      const { data, error } = await signIn(formData.email, formData.password)
+      console.log("Tentative de connexion avec:", formData.email)
+
+      // Utiliser directement l'API Supabase pour la connexion
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      })
 
       if (error) {
-        setError(error.message || "Une erreur s'est produite lors de la connexion")
+        console.error("Erreur lors de la connexion:", error.message)
+        setError(error.message)
+        setIsLoading(false)
         return
       }
 
+      console.log("Connexion réussie, utilisateur:", data?.user?.id)
+      
       if (data?.user) {
-        // Redirection vers la page d'accueil après connexion réussie
-        router.push("/")
-        router.refresh()
+        // Stocker les informations de session dans le localStorage pour déboguer
+        try {
+          localStorage.setItem('auth_debug', JSON.stringify({
+            userId: data.user.id,
+            email: data.user.email,
+            timestamp: new Date().toISOString()
+          }))
+        } catch (e) {
+          console.error("Erreur lors du stockage des infos de débogage:", e)
+        }
+        
+        // Vérifier si l'utilisateur a déjà une famille
+        try {
+          const { data: familyData, error: familyError } = await supabase
+            .from('family_members')
+            .select('family_id')
+            .eq('user_id', data.user.id)
+            .limit(1)
+          
+          if (familyError) {
+            console.error("Erreur lors de la vérification de la famille:", familyError)
+            // En cas d'erreur de requête, diriger vers l'onboarding par sécurité
+            router.push("/onboarding/family-setup")
+            return
+          }
+          
+          // Attendre un court instant pour s'assurer que la session est bien établie
+          await new Promise(resolve => setTimeout(resolve, 500))
+          
+          // Redirection basée sur l'appartenance à une famille
+          if (familyData && familyData.length > 0) {
+            console.log("Utilisateur avec famille, redirection vers le dashboard")
+            router.push("/dashboard")
+          } else {
+            console.log("Nouvel utilisateur, redirection vers l'onboarding")
+            router.push("/onboarding/family-setup")
+          }
+        } catch (err) {
+          console.error("Erreur lors de la vérification de la famille:", err)
+          // En cas d'erreur, rediriger vers l'onboarding par défaut
+          router.push("/onboarding/family-setup")
+        }
       }
     } catch (err) {
-      console.error("Erreur lors de la connexion:", err)
-      setError("Une erreur inattendue s'est produite")
+      console.error("Exception lors de la connexion:", err)
+      setError("Une erreur s'est produite lors de la connexion. Veuillez réessayer.")
     } finally {
       setIsLoading(false)
     }
@@ -150,4 +193,3 @@ export default function LoginForm() {
     </Card>
   )
 }
-

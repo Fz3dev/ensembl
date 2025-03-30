@@ -1,150 +1,12 @@
-import { createBrowserClient } from "@supabase/ssr"
-import type { User } from "@supabase/supabase-js"
+import { createBrowserClient } from '@supabase/ssr'
+import type { User } from '@supabase/supabase-js'
 
-// Création du client Supabase avec une meilleure gestion des erreurs
-let supabaseClient: ReturnType<typeof createBrowserClient> | null = null
+// Création du client Supabase avec le nouveau package SSR
+export const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
-export function getSupabaseClient() {
-  if (typeof window === "undefined") {
-    // Ne pas initialiser le client côté serveur
-    return null
-  }
-
-  if (!supabaseClient) {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error("Erreur: Variables d'environnement Supabase manquantes")
-      throw new Error("Variables d'environnement Supabase manquantes")
-    }
-
-    try {
-      supabaseClient = createBrowserClient(supabaseUrl, supabaseAnonKey)
-    } catch (error) {
-      console.error("Erreur lors de la création du client Supabase:", error)
-      throw new Error("Échec de l'initialisation du client Supabase")
-    }
-  }
-
-  return supabaseClient
-}
-
-// Création d'un client sécurisé qui ne lance pas d'erreur
-export const supabase = {
-  auth: {
-    getSession: async () => {
-      try {
-        const client = getSupabaseClient()
-        if (!client) return { data: { session: null }, error: null }
-        return await client.auth.getSession()
-      } catch (error) {
-        console.error("Erreur lors de la récupération de la session:", error)
-        return { data: { session: null }, error }
-      }
-    },
-    getUser: async () => {
-      try {
-        const client = getSupabaseClient()
-        if (!client) return { data: { user: null }, error: null }
-        return await client.auth.getUser()
-      } catch (error) {
-        console.error("Erreur lors de la récupération de l'utilisateur:", error)
-        return { data: { user: null }, error }
-      }
-    },
-    signUp: async (params) => {
-      try {
-        const client = getSupabaseClient()
-        if (!client) return { data: null, error: { message: "Client Supabase non disponible" } }
-        return await client.auth.signUp(params)
-      } catch (error) {
-        console.error("Erreur lors de l'inscription:", error)
-        return { data: null, error }
-      }
-    },
-    signInWithPassword: async (params) => {
-      try {
-        const client = getSupabaseClient()
-        if (!client) return { data: null, error: { message: "Client Supabase non disponible" } }
-        return await client.auth.signInWithPassword(params)
-      } catch (error) {
-        console.error("Erreur lors de la connexion:", error)
-        return { data: null, error }
-      }
-    },
-    signOut: async () => {
-      try {
-        const client = getSupabaseClient()
-        if (!client) return { error: null }
-        return await client.auth.signOut()
-      } catch (error) {
-        console.error("Erreur lors de la déconnexion:", error)
-        return { error }
-      }
-    },
-    resetPasswordForEmail: async (email, options) => {
-      try {
-        const client = getSupabaseClient()
-        if (!client) return { data: null, error: { message: "Client Supabase non disponible" } }
-        return await client.auth.resetPasswordForEmail(email, options)
-      } catch (error) {
-        console.error("Erreur lors de la réinitialisation du mot de passe:", error)
-        return { data: null, error }
-      }
-    },
-    updateUser: async (params) => {
-      try {
-        const client = getSupabaseClient()
-        if (!client) return { data: null, error: { message: "Client Supabase non disponible" } }
-        return await client.auth.updateUser(params)
-      } catch (error) {
-        console.error("Erreur lors de la mise à jour de l'utilisateur:", error)
-        return { data: null, error }
-      }
-    },
-    exchangeCodeForSession: async (code) => {
-      try {
-        const client = getSupabaseClient()
-        if (!client) return { data: null, error: { message: "Client Supabase non disponible" } }
-        return await client.auth.exchangeCodeForSession(code)
-      } catch (error) {
-        console.error("Erreur lors de l'échange de code:", error)
-        return { data: null, error }
-      }
-    },
-  },
-  from: (table) => {
-    try {
-      const client = getSupabaseClient()
-      if (!client) throw new Error("Client Supabase non disponible")
-      return client.from(table)
-    } catch (error) {
-      console.error(`Erreur lors de l'accès à la table ${table}:`, error)
-      // Retourner un objet factice qui ne lance pas d'erreur
-      return {
-        select: () => Promise.resolve({ data: null, error }),
-        insert: () => Promise.resolve({ data: null, error }),
-        update: () => Promise.resolve({ data: null, error }),
-        delete: () => Promise.resolve({ data: null, error }),
-        eq: () => ({ data: null, error }),
-        order: () => ({ data: null, error }),
-      }
-    }
-  },
-  rpc: (fn, params) => {
-    try {
-      const client = getSupabaseClient()
-      if (!client) throw new Error("Client Supabase non disponible")
-      return client.rpc(fn, params)
-    } catch (error) {
-      console.error(`Erreur lors de l'appel RPC ${fn}:`, error)
-      return Promise.resolve({ data: null, error })
-    }
-  },
-}
-
-// Le reste du fichier reste inchangé...
 // Types et fonctions d'authentification
 
 export type Event = {
@@ -284,6 +146,3 @@ export async function getCurrentUser(): Promise<User | null> {
     return null
   }
 }
-
-// Le reste des fonctions reste inchangé...
-
